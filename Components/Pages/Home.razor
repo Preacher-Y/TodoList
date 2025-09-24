@@ -1,0 +1,118 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Home</PageTitle>
+
+<header class="py-4 text-center text-7xl font-bold text-gray-300">
+    Todos
+</header>
+
+<main class="max-w-2xl mx-auto">
+    <section class="mt-6">
+        <EditForm Model="@todoModel" OnValidSubmit="@AddTodo"
+                  class="flex justify-between gap-6 group transition-all duration-1000 ease-in-out hover:scale-101 items-center w-[80%] mx-auto px-8 py-3 rounded-full shadow-md shadow-gray-400">
+            
+            <InputText @bind-Value="todoModel.Text" 
+              placeholder="Add Todo..." 
+              class="w-full outline-none" />
+
+            <button type="submit" class="flex align-middle">
+                <span class="bg-green-700 text-white font-bold pb-1 px-2.5 rounded-full text-2xl group-hover:scale-102 transition-all duration-1000 ease-in-out">
+                    +
+                </span>
+            </button>
+        </EditForm>
+    </section>
+
+    <section class="mt-6 relative">
+        <div class='transition-all duration-500 ease-in-out'>
+            @if (todos.Count > 0)
+            {
+                <p class="text-end text-sm text-red-700 font-semibold hover:underline underline-offset-2 cursor-pointer" 
+                @onclick="ClearAll">Clear All</p>
+            }else{
+                <p class='text-gray-400 text-sm text-center'>Add Some Tasks</p>
+            }
+        </div>
+        
+        <ul>
+            @for (int i = 0; i < todos.Count; i++)
+            {
+                int index = i;
+                <li class="flex justify-between items-center px-4 py-2">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox"
+                               checked="@checkedItems[index]"
+                               disabled="@allChecked"
+                               @onchange="() => ToggleChecked(index)"
+                               class="accent-green-600 hover:scale-110 transition-all duration-900 ease-in-out" />
+                        <span class="ml-4 text-lg @(checkedItems[index] ? "line-through" : "")">
+                            @todos[index]
+                        </span>
+                    </label>
+
+                    <button disabled="@allChecked" class="cursor-pointer" @onclick="() => DeleteTodo(index)">
+                        <span class="text-red-700 text-xl font-semibold hover:scale-110 transition-all duration-200 ease-in-out">x</span>
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <div class="transition-all duration-500 ease-out transform fixed top-0 left-1/2 -translate-x-1/2 z-50 w-[80%] max-w-md mt-6 px-6 py-4 rounded-2xl text-center shadow-lg @(allChecked ? "bg-white text-black" : "hidden") @(showMessage ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0")">
+            <h1 class="text-xl font-bold">Well Done!</h1>
+            <p class="text-sm">All tasks have been finished</p>
+        </div>
+    </section>
+</main>
+
+@code {
+    private List<string> todos = new();
+    private List<bool> checkedItems = new();
+    
+    public class TodoModel 
+    { 
+        public string Text { get; set; } = string.Empty; 
+    }
+    
+    private TodoModel todoModel = new();
+    
+    private bool allChecked => checkedItems.Count > 0 && checkedItems.All(c => c);
+    private bool showMessage => allChecked;
+
+    private void AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(todoModel.Text))
+        {
+            todos.Add(todoModel.Text.Trim());
+            checkedItems.Add(false);
+            todoModel.Text = string.Empty;
+            StateHasChanged();
+        }
+    }
+
+    private void DeleteTodo(int index)
+    {
+        if (index >= 0 && index < todos.Count)
+        {
+            todos.RemoveAt(index);
+            checkedItems.RemoveAt(index);
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleChecked(int index)
+    {
+        if (index >= 0 && index < checkedItems.Count)
+        {
+            checkedItems[index] = !checkedItems[index];
+            StateHasChanged();
+        }
+    }
+
+    private void ClearAll()
+    {
+        todos.Clear();
+        checkedItems.Clear();
+        StateHasChanged();
+    }
+}
