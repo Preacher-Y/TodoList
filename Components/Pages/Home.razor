@@ -1,5 +1,7 @@
 ﻿@page "/"
 @rendermode InteractiveServer
+@using System.Text.Json
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Todo</PageTitle>
 
@@ -53,9 +55,14 @@
                         }
                         else
                         {
-                            <span class="ml-4 text-lg @(checkedItems[index] ? "line-through" : "")">
-                                @todos[index]
-                            </span>
+                            <div class="ml-4">
+                                <span class="text-lg @(checkedItems[index] ? "line-through" : "")">
+                                    @todos[index].Text
+                                </span>
+                                <div class="text-xs text-gray-500">
+                                    @todos[index].CreatedDate.ToString("MMM dd, yyyy")
+                                </div>
+                            </div>
                         }
                     </label>
 
@@ -88,86 +95,133 @@
 </main>
 
 @code {
-    private List<string> todos = new();
+    private List<TodoItem> todos = new();
     private List<bool> checkedItems = new();
     private int editingIndex = -1;
     private string editText = string.Empty;
-    
+    private const string FilePath = "todos.json";
+
+    public class TodoItem
+    {
+        public string Text { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+        public bool IsCompleted { get; set; }
+    }
+
     public class TodoModel 
     { 
         public string Text { get; set; } = string.Empty; 
     }
-    
+
     private TodoModel todoModel = new();
-    
+
     private bool allChecked => checkedItems.Count > 0 && checkedItems.All(c => c);
     private bool showMessage => allChecked;
 
-    private void AddTodo()
+    private async Task AddTodo()
     {
         if (!string.IsNullOrWhiteSpace(todoModel.Text))
         {
-            todos.Add(todoModel.Text.Trim());
+            var newTodo = new TodoItem
+            {
+                Text = todoModel.Text.Trim(),
+                CreatedDate = DateTime.Now,
+                IsCompleted = false
+            };
+            todos.Add(newTodo);
             checkedItems.Add(false);
             todoModel.Text = string.Empty;
+            await SaveTodosToFile();
             StateHasChanged();
         }
     }
 
-    private void DeleteTodo(int index)
+    private async Task DeleteTodo(int index)
     {
         if (index >= 0 && index < todos.Count)
         {
             todos.RemoveAt(index);
             checkedItems.RemoveAt(index);
+            await SaveTodosToFile();
             StateHasChanged();
         }
     }
 
-    private void ToggleChecked(int index)
+    private async Task ToggleChecked(int index)
     {
         if (index >= 0 && index < checkedItems.Count)
         {
             checkedItems[index] = !checkedItems[index];
+            todos[index].IsCompleted = checkedItems[index];
+            await SaveTodosToFile();
             StateHasChanged();
         }
     }
 
-    private void ClearAll()
+    private async Task ClearAll()
     {
         todos.Clear();
         checkedItems.Clear();
+        await SaveTodosToFile();
         StateHasChanged();
     }
 
     private void StartEdit(int index)
     {
         editingIndex = index;
-        editText = todos[index];
+        editText = todos[index].Text;
         StateHasChanged();
     }
 
-    private void SaveEdit(int index)
+    private async Task SaveEdit(int index)
     {
         if (!string.IsNullOrWhiteSpace(editText))
         {
-            todos[index] = editText.Trim();
+            todos[index].Text = editText.Trim();
+            await SaveTodosToFile();
         }
         editingIndex = -1;
         StateHasChanged();
     }
 
+    private void CancelEdit()
+    {
+        StateHasChanged();
+    }
 
 
-    private void HandleKeyPress(KeyboardEventArgs e, int index)
+
+    private async Task HandleKeyPress(KeyboardEventArgs e, int index)
     {
         if (e.Key == "Enter")
         {
-            SaveEdit(index);
+            await SaveEdit(index);
         }
         else if (e.Key == "Escape")
         {
             CancelEdit();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTodosFromFile();
+    }
+
+    private async Task SaveTodosToFile()
+    {
+        var json = JsonSerializer.Serialize(todos);
+        await File.WriteAllTextAsync(FilePath, json);
+    }
+
+    private async Task LoadTodosFromFile()
+    {
+        if (File.Exists(FilePath))
+        {
+            var json = await File.ReadAllTextAsync(FilePath);
+            todos = JsonSerializer.Deserialize<List<TodoItem>>(json) ?? new();
+            todos = todos.OrderBy(t => t.CreatedDate).ToList();
+            checkedItems = todos.Select(t => t.IsCompleted).ToList();
         }
     }
 }
