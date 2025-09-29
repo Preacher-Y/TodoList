@@ -46,14 +46,36 @@
                                disabled="@allChecked"
                                @onchange="() => ToggleChecked(index)"
                                class="accent-green-600 hover:scale-110 transition-all duration-900 ease-in-out" />
-                        <span class="ml-4 text-lg @(checkedItems[index] ? "line-through" : "")">
-                            @todos[index]
-                        </span>
+                        @if (editingIndex == index)
+                        {
+                            <input type="text" @bind="editText" @onkeypress="@((e) => HandleKeyPress(e, index))"
+                                   class="ml-4 text-lg outline-none border-b-2 border-blue-500 bg-transparent" />
+                        }
+                        else
+                        {
+                            <span class="ml-4 text-lg @(checkedItems[index] ? "line-through" : "")">
+                                @todos[index]
+                            </span>
+                        }
                     </label>
 
-                    <button disabled="@allChecked" class="cursor-pointer" @onclick="() => DeleteTodo(index)">
-                        <span class="text-red-700 text-lg font-semibold hover:scale-110 transition-all duration-200 ease-in-out">x</span>
-                    </button>
+                    <div class="flex gap-6">
+                        @if (editingIndex == index)
+                        {
+                            <button class="cursor-pointer" @onclick="() => SaveEdit(index)">
+                                <span class="text-green-600 text-sm font-semibold hover:scale-110 transition-all duration-200 ease-in-out">save</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button disabled="@allChecked" class="cursor-pointer" @onclick="() => StartEdit(index)">
+                                <span class="text-blue-600 text-sm font-semibold hover:scale-110 transition-all duration-200 ease-in-out">edit</span>
+                            </button>
+                        }
+                        <button disabled="@allChecked" class="cursor-pointer" @onclick="() => DeleteTodo(index)">
+                            <span class="text-red-700 text-lg font-semibold hover:scale-110 transition-all duration-200 ease-in-out">x</span>
+                        </button>
+                    </div>
                 </li>
             }
         </ul>
@@ -68,6 +90,8 @@
 @code {
     private List<string> todos = new();
     private List<bool> checkedItems = new();
+    private int editingIndex = -1;
+    private string editText = string.Empty;
     
     public class TodoModel 
     { 
@@ -114,5 +138,36 @@
         todos.Clear();
         checkedItems.Clear();
         StateHasChanged();
+    }
+
+    private void StartEdit(int index)
+    {
+        editingIndex = index;
+        editText = todos[index];
+        StateHasChanged();
+    }
+
+    private void SaveEdit(int index)
+    {
+        if (!string.IsNullOrWhiteSpace(editText))
+        {
+            todos[index] = editText.Trim();
+        }
+        editingIndex = -1;
+        StateHasChanged();
+    }
+
+
+
+    private void HandleKeyPress(KeyboardEventArgs e, int index)
+    {
+        if (e.Key == "Enter")
+        {
+            SaveEdit(index);
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelEdit();
+        }
     }
 }

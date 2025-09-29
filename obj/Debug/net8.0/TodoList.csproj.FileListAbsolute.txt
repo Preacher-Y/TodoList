@@ -30,3 +30,4 @@ C:\Users\PREACHER\source\repos\TodoList\TodoList\obj\Debug\net8.0\TodoList.genru
 C:\Users\PREACHER\source\repos\TodoList\TodoList\obj\Debug\net8.0\ref\TodoList.dll
 C:\Users\PREACHER\source\repos\TodoList\TodoList\bin\Debug\net8.0\package-lock.json
 C:\Users\PREACHER\source\repos\TodoList\TodoList\bin\Debug\net8.0\package.json
+C:\Users\PREACHER\source\repos\TodoList\TodoList\obj\Debug\net8.0\TodoList.sourcelink.json
